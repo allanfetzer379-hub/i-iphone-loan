@@ -26,9 +26,22 @@ body{background:#fff}header{background:#fff}.wrap{max-width:1180px}nav{height:76
 
 document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',async()=>{const feedback=button.parentElement.querySelector('.copy-feedback');try{await navigator.clipboard.writeText('我要申請');feedback.textContent='已複製，開啟 LINE 後貼上並傳送。';}catch{feedback.textContent='請手動複製：我要申請';}}));
 const config=window.IPHONE_LOAN_CONFIG||{};
+const metaPixelId=String(config.metaPixelId||'').trim();
+const metaPixelEnabled=/^\d{5,25}$/.test(metaPixelId);
+if(metaPixelEnabled){
+  if(!window.fbq){const fbq=window.fbq=function(){fbq.callMethod?fbq.callMethod.apply(fbq,arguments):fbq.queue.push(arguments)};if(!window._fbq)window._fbq=fbq;fbq.push=fbq;fbq.loaded=true;fbq.version='2.0';fbq.queue=[];const script=document.createElement('script');script.async=true;script.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(script);}
+  window.fbq('init',metaPixelId);
+  window.fbq('trackSingle',metaPixelId,'PageView');
+}
+function trackLineContact(){
+  if(metaPixelEnabled&&typeof window.fbq==='function'){
+    try{window.fbq('trackSingle',metaPixelId,'Contact')}catch(error){/* Tracking must never prevent opening LINE. */}
+  }
+}
+
 let selectedModel='';let selectedMin=0;let selectedMax=0;let calculationTimer;
 const calculate=document.querySelector('#calculate');const result=document.querySelector('#calc-result');const status=document.querySelector('#calc-status');
 document.querySelectorAll('[data-model]').forEach(button=>button.addEventListener('click',()=>{clearTimeout(calculationTimer);selectedModel=button.dataset.model;selectedMin=Number(button.dataset.min);selectedMax=Number(button.dataset.max);document.querySelectorAll('[data-model]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));result.hidden=true;calculate.disabled=false;calculate.removeAttribute('aria-busy');calculate.innerHTML='開始試算參考額度 <span aria-hidden="true">→</span>';status.classList.remove('loading');status.textContent='已選擇 '+selectedModel+'，點擊按鈕查看此機型參考額度。';}));
 calculate.addEventListener('click',()=>{if(!selectedModel)return;result.hidden=true;calculate.disabled=true;calculate.setAttribute('aria-busy','true');calculate.textContent='試算中…';status.classList.add('loading');status.textContent='正在整理 '+selectedModel+' 的方案參考資訊…';const chosen=selectedModel;const low=selectedMin.toLocaleString('en-US');const high=selectedMax.toLocaleString('en-US');calculationTimer=setTimeout(()=>{document.querySelector('#result-model').textContent=chosen+' · 免押手機方案';document.querySelector('.result-amount').innerHTML='<small>NT$</small>'+low+(low===high?'':' <span>–</span> '+high);result.hidden=false;status.classList.remove('loading');status.textContent='參考資訊已就緒，實際額度請透過 LINE 確認。';calculate.disabled=false;calculate.removeAttribute('aria-busy');calculate.textContent='重新試算';},2000);});
-document.querySelectorAll('[data-line]').forEach(button=>button.addEventListener('click',()=>{let url;try{url=new URL(config.lineUrl)}catch{}if(url&&url.protocol==='https:'&&['line.me','lin.ee'].includes(url.hostname)){window.open(url.href,'_blank','noopener,noreferrer')}else document.querySelector('#line-dialog').showModal()}));
+document.querySelectorAll('[data-line]').forEach(button=>button.addEventListener('click',()=>{let url;try{url=new URL(config.lineUrl)}catch{}if(url&&url.protocol==='https:'&&['line.me','lin.ee'].includes(url.hostname)){trackLineContact();window.open(url.href,'_blank','noopener,noreferrer')}else document.querySelector('#line-dialog').showModal()}));
 </script></body></html>
